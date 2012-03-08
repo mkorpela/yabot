@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import os
+import random
 
 from robot.conf import RobotSettings
 from robot.running import TestSuite
@@ -20,7 +21,7 @@ from robot.result import ResultFromXml
 def get_available_tests(source):
     settings = RobotSettings()
     suite = TestSuite([os.path.abspath(source)], settings)
-    return get_tests(suite)
+    return list(get_tests(suite))
 
 def get_tests(suite):
     for s in suite.suites:
@@ -31,8 +32,11 @@ def get_tests(suite):
 
 def get_failing_tests_from_output_xml(output_xml):
     results = ResultFromXml(output_xml)
-    return (t for t in get_tests(results.suite) if not t.is_passed)
+    return [t for t in get_tests(results.suite) if not t.is_passed]
 
 if __name__ == '__main__':
-    for test in get_failing_tests_from_output_xml(os.path.join(os.path.dirname(__file__), '..', 'testdata', 'output.xml')):
-        print test.longname
+    tests = get_available_tests(os.path.join(os.path.dirname(__file__), '..', '..', 'robot','atest', 'robot'))
+    for t in sorted(random.sample(tests, len(tests)/10)):
+        print t.longname
+    #for test in get_failing_tests_from_output_xml(os.path.join(os.path.dirname(__file__), '..', 'testdata', 'output.xml')):
+    #    print test.longname
