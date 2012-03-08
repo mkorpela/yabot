@@ -15,20 +15,24 @@ import os
 
 from robot.conf import RobotSettings
 from robot.running import TestSuite
+from robot.result import ResultFromXml
 
 def get_available_tests(source):
     settings = RobotSettings()
     suite = TestSuite([os.path.abspath(source)], settings)
-    return gather_tests(suite)
+    return get_tests(suite)
 
-def gather_tests(suite, tests_so_far=None):
-    tests_so_far = tests_so_far or []
+def get_tests(suite):
     for s in suite.suites:
-        tests_so_far = gather_tests(s, tests_so_far)
-    return tests_so_far + [t.longname for t in suite.tests]
+        for t in get_tests(s):
+            yield t
+    for t in suite.tests:
+        yield t
+
+def get_failing_tests_from_output_xml(output_xml):
+    results = ResultFromXml(output_xml)
+    return (t for t in get_tests(results.suite) if not t.is_passed)
 
 if __name__ == '__main__':
-    s = os.path.abspath('../../robot/atest/testdata')
-    print s
-    for test in get_available_tests(s):
-        print test
+    for test in get_failing_tests_from_output_xml(os.path.join(os.path.dirname(__file__), '..', 'testdata', 'output.xml')):
+        print test.longname
