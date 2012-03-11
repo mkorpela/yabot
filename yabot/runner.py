@@ -16,12 +16,17 @@ import random
 
 from robot.conf import RobotSettings
 from robot.running import TestSuite
-from robot.result import ResultFromXml
+from robot.result import ExecutionResult
 
 def get_available_tests(source):
     settings = RobotSettings()
     suite = TestSuite([os.path.abspath(source)], settings)
     return list(get_tests(suite))
+
+def get_available_test_suites(source):
+    settings = RobotSettings()
+    suite = TestSuite([os.path.abspath(source)], settings)
+    return list(get_test_suites(suite))
 
 def get_tests(suite):
     for s in suite.suites:
@@ -30,13 +35,29 @@ def get_tests(suite):
     for t in suite.tests:
         yield t
 
+def get_test_suites(suite):
+    for s in suite.suites:
+        for test_suite in get_test_suites(s):
+            yield test_suite
+    if suite.tests:
+        yield suite
+
 def get_failing_tests_from_output_xml(output_xml):
-    results = ResultFromXml(output_xml)
-    return [t for t in get_tests(results.suite) if not t.is_passed]
+    results = ExecutionResult(output_xml)
+    return [t for t in get_tests(results.suite) if not t.passed]
+
+def get_failing_test_suites_from_output_xml(output_xml):
+    results = ExecutionResult(output_xml)
+    return [s for s in get_test_suites(results.suite) if s.status == 'FAIL']
 
 if __name__ == '__main__':
-    tests = get_available_tests(os.path.join(os.path.dirname(__file__), '..', '..', 'robot','atest', 'robot'))
-    for t in sorted(random.sample(tests, len(tests)/10)):
-        print t.longname
-    #for test in get_failing_tests_from_output_xml(os.path.join(os.path.dirname(__file__), '..', 'testdata', 'output.xml')):
-    #    print test.longname
+    test_suites =  get_available_test_suites(os.path.join(os.path.dirname(__file__), '..', '..', 'robot','atest', 'robot'))
+    with open('suites.txt', 'w') as out:
+        for s in sorted(random.sample(test_suites, len(test_suites)/10)):
+            out.write('--suite %s\n' % s.longname)
+    ##tests = get_available_tests(os.path.join(os.path.dirname(__file__), '..', '..', 'robot','atest', 'robot'))
+    ##with open('tests.txt', 'w') as out:
+    ##    for t in sorted(random.sample(tests, len(tests)/10)):
+    ##        out.write('--test %s\n' % t.longname)
+    for item in get_failing_test_suites_from_output_xml(os.path.join(os.path.dirname(__file__), '..', 'testdata', 'output.xml')):
+        print item.longname
