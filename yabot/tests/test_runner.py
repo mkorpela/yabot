@@ -1,4 +1,3 @@
-import random
 import unittest
 from yabot.yabot import Yabot
 
@@ -27,6 +26,15 @@ def _execution_result(failed_tests=None, failed_suites=None):
     return result
 
 class RunnerTestCase(unittest.TestCase):
+
+    def test_basic_execution(self):
+        yabot = Yabot(random_tests=True,
+                      fraction_of_tests_to_run=0.2,
+                      rerun_failed_from='rerun_from_here.xml',
+                      source='test_source',
+                      runner='pybot',
+                      arguments=[])
+        yabot.execute()
 
     def test_random_tests(self):
         tests = Yabot().random_tests([_test(i) for i in xrange(200)], 10)
